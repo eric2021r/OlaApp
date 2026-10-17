@@ -1,6 +1,7 @@
 package com.example.olaapp
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -50,6 +51,13 @@ class MainActivity : Activity() {
             }
         }
 
+        val botaoCalculadora = Button(this).apply {
+            text = "Abrir calculadora"
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, CalculadoraActivity::class.java))
+            }
+        }
+
         val raiz = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -63,6 +71,7 @@ class MainActivity : Activity() {
             addView(info)
             addView(contador)
             addView(botao)
+            addView(botaoCalculadora)
         }
 
         setContentView(raiz)
