@@ -3,6 +3,11 @@
 App Android simples em Kotlin (um botão com contador, mostrando a versão do Android e a arquitetura do aparelho).
 Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM64 ou x86).
 
+## O que tem no app
+- **Contador:** o botão da tela inicial conta os cliques.
+- **Calculadora:** `+ − × ÷`, `%`, `±`, vírgula, apagar e limpar.
+- **Aventura da Espada:** jogo de plataforma 2D em pixel art, em tela cheia na horizontal. Corra, pule buracos e use a espada contra slimes, esqueletos e morcegos. Tem 3 corações, corações para recuperar vida, pontuação e recorde salvo no aparelho. Todos os desenhos estão no código (`game/SpriteData.kt`), sem arquivos de imagem.
+
 ## Como gerar o APK
 
 ### Opção 1: GitHub Actions (sem instalar nada)

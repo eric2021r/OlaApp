@@ -58,6 +58,13 @@ class MainActivity : Activity() {
             }
         }
 
+        val botaoJogo = Button(this).apply {
+            text = "Jogar: Aventura da Espada"
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, GameActivity::class.java))
+            }
+        }
+
         val raiz = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -72,6 +79,7 @@ class MainActivity : Activity() {
             addView(contador)
             addView(botao)
             addView(botaoCalculadora)
+            addView(botaoJogo)
         }
 
         setContentView(raiz)
