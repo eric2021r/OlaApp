@@ -16,16 +16,26 @@ Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM6
 
 - **Coliseu do Eric (3D):** jogo 3D em terceira pessoa, em tela cheia na horizontal. Você (o lutador escolhido no menu) luta numa arena medieval contra rodadas de goblins (com um goblin chefe a cada 5 rounds). Use o joystick à esquerda para andar, `ATACAR` para usar a arma, `ROLAR` para desviar (você fica invulnerável por um instante) e arraste o dedo à direita para girar a câmera. Feito com OpenGL ES, que já vem no Android, sem bibliotecas nem arquivos de imagem: o cenário, os personagens e as armas são gerados no código (`coliseu/`).
 
+## Ícone do app
+O ícone é o **goblin do Coliseu segurando o porrete com pregos**, no estilo "blocos" do jogo (pele verde, orelhas pontudas, olhos amarelos, colete de couro e pano vermelho), sobre um fundo escuro com brilho de arena.
+- Android 8+ usa o **ícone adaptativo** (`mipmap-anydpi-v26/` + `drawable/ic_launcher_background.xml`), então o ícone acompanha o formato do aparelho (círculo, quadrado arredondado…).
+- Android 7 e anteriores usa os PNGs em `mipmap-mdpi` a `mipmap-xxxhdpi`.
+- Os PNGs são desenhados por código (sem arquivos de imagem externos). Para refazer ou mudar algo, rode na raiz do repositório:
+  ```
+  powershell -ExecutionPolicy Bypass -File tools\gerar-icone.ps1
+  ```
+  O desenho fica em `tools/gerar-icone.ps1` (cores em `$P`, formas em `AddPoly`/`AddRect`/`AddLimb`).
+
 ## Baixar o APK pronto (release)
 A cada tag `v*` (ou quando o workflow **Release APK** é executado manualmente na aba *Actions*), o GitHub Actions compila e publica uma **release** com o `app-debug.apk` anexado.
 1. Abra a aba **Releases** do repositório (https://github.com/eric2021r/OlaApp/releases).
 2. Baixe o **app-debug.apk** da release mais recente.
 3. Instale no celular (permita "instalar apps de fontes desconhecidas").
 
-Para publicar uma release nova, crie e envie uma tag:
+Para publicar uma release nova, crie e envie uma tag (**sempre uma tag nova**):
 ```
-git tag v1.0
-git push origin v1.0
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 ## Como gerar o APK
