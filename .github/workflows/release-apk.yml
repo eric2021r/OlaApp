@@ -35,10 +35,12 @@ jobs:
             TAG="v1.0-build${GITHUB_RUN_NUMBER}"
           fi
           echo "Publicando a release $TAG"
-          NOTES="APK de depuracao (debug) gerado automaticamente pelo GitHub Actions. Baixe o app-debug.apk e instale no celular (permita instalar apps de fontes desconhecidas). Conteudo: Contador, Calculadora, Aventura da Espada (2D) e Coliseu do Eric (3D) com o menu de lutadores - Cavaleiro, Lutador e Assassino - alem de moedas e niveis."
+          TITLE="Coliseu do Eric - $TAG"
+          NOTES="APK de depuração (debug) gerado automaticamente pelo GitHub Actions. Baixe o app-debug.apk e instale no celular (permita instalar apps de fontes desconhecidas). Conteúdo: Contador, Calculadora, Aventura da Espada (2D) e Coliseu do Eric (3D), com o menu de lutadores (Cavaleiro, Lutador e Assassino), moedas e níveis."
           APK="app/build/outputs/apk/debug/app-debug.apk"
           if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
             gh release upload "$TAG" "$APK" --clobber
           else
-            gh release create "$TAG" "$APK" --title "Coliseu do Eric - $TAG" --notes "$NOTES" --target "$GITHUB_SHA"
+            gh release create "$TAG" "$APK" --title "$TITLE" --notes "$NOTES" --target "$GITHUB_SHA"
           fi
