@@ -8,6 +8,8 @@ Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM6
 - **Calculadora:** `+ − × ÷`, `%`, `±`, vírgula, apagar e limpar.
 - **Aventura da Espada:** jogo de plataforma 2D em pixel art, em tela cheia na horizontal. Corra, pule buracos e use a espada contra slimes, esqueletos e morcegos. Tem 3 corações, corações para recuperar vida, pontuação e recorde salvo no aparelho. Todos os desenhos estão no código (`game/SpriteData.kt`), sem arquivos de imagem.
 
+- **Coliseu do Eric (3D):** jogo 3D em terceira pessoa, em tela cheia na horizontal. Um cavaleiro luta numa arena medieval contra rodadas de goblins (com um goblin chefe a cada 5 rounds). Use o joystick à esquerda para andar, `ATACAR` para bater com a espada, `ROLAR` para desviar (você fica invulnerável por um instante) e arraste o dedo à direita para girar a câmera. Feito com OpenGL ES, que já vem no Android, sem bibliotecas nem arquivos de imagem: o cenário e os personagens são gerados no código (`coliseu/`).
+
 ## Como gerar o APK
 
 ### Opção 1: GitHub Actions (sem instalar nada)

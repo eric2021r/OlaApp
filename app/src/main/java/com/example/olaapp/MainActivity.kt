@@ -65,6 +65,13 @@ class MainActivity : Activity() {
             }
         }
 
+        val botaoColiseu = Button(this).apply {
+            text = "Jogar: Coliseu do Eric (3D)"
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, ColiseuActivity::class.java))
+            }
+        }
+
         val raiz = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -80,6 +87,7 @@ class MainActivity : Activity() {
             addView(botao)
             addView(botaoCalculadora)
             addView(botaoJogo)
+            addView(botaoColiseu)
         }
 
         setContentView(raiz)
