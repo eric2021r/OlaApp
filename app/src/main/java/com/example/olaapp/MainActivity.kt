@@ -18,6 +18,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        Som.iniciar(this)
         val pad = (24 * resources.displayMetrics.density).toInt()
 
         val titulo = TextView(this).apply {
@@ -48,12 +49,14 @@ class MainActivity : Activity() {
             setOnClickListener {
                 cliques++
                 contador.text = "Cliques: $cliques"
+                Som.tocar(Som.Efeito.CLIQUE)
             }
         }
 
         val botaoCalculadora = Button(this).apply {
             text = "Abrir calculadora"
             setOnClickListener {
+                Som.tocar(Som.Efeito.CLIQUE)
                 startActivity(Intent(this@MainActivity, CalculadoraActivity::class.java))
             }
         }
@@ -61,6 +64,7 @@ class MainActivity : Activity() {
         val botaoJogo = Button(this).apply {
             text = "Jogar: Aventura da Espada"
             setOnClickListener {
+                Som.tocar(Som.Efeito.CLIQUE)
                 startActivity(Intent(this@MainActivity, GameActivity::class.java))
             }
         }
@@ -68,7 +72,17 @@ class MainActivity : Activity() {
         val botaoColiseu = Button(this).apply {
             text = "Jogar: Coliseu do Eric (3D)"
             setOnClickListener {
+                Som.tocar(Som.Efeito.CLIQUE)
                 startActivity(Intent(this@MainActivity, MenuActivity::class.java))
+            }
+        }
+
+        val botaoSom = Button(this).apply {
+            text = Som.rotulo()
+            setOnClickListener {
+                Som.definirLigado(!Som.ligado)
+                text = Som.rotulo()
+                Som.tocar(Som.Efeito.CLIQUE)
             }
         }
 
@@ -88,6 +102,7 @@ class MainActivity : Activity() {
             addView(botaoCalculadora)
             addView(botaoJogo)
             addView(botaoColiseu)
+            addView(botaoSom)
         }
 
         setContentView(raiz)

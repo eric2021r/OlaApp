@@ -13,6 +13,7 @@ import android.graphics.Typeface
 import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
+import com.example.olaapp.Som
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.hypot
@@ -42,6 +43,10 @@ class GameView(
     private val arte = PixelArt()
     private val dp = resources.displayMetrics.density
 
+    init {
+        Som.iniciar(context)
+    }
+
     private var estado = Estado.INICIO
     private var engine: GameEngine? = null
     private var escala = 1f              // pixels da tela por pixel do desenho
@@ -56,6 +61,7 @@ class GameView(
     private val btnDir = Botao()
     private val btnPulo = Botao()
     private val btnAtaque = Botao()
+    private val btnSom = Botao()
 
     // ---- tintas (criadas uma vez só)
     private val pPixel = Paint().apply { isFilterBitmap = false; isAntiAlias = false; isDither = false }
@@ -110,12 +116,26 @@ class GameView(
         btnDir.apply { cx = m + 3 * r + 14 * dp; cy = y; this.r = r }
         btnAtaque.apply { cx = w - m - r; cy = y; this.r = r }
         btnPulo.apply { cx = w - m - 3 * r - 14 * dp; cy = y; this.r = r }
+        btnSom.apply { this.r = 14 * dp; cx = w / 2f; cy = 8 * dp + this.r }
 
         novoEngine()
     }
 
     private fun novoEngine() {
-        engine = GameEngine(System.nanoTime(), larguraLogica)
+        engine = GameEngine(System.nanoTime(), larguraLogica).also { it.aoSom = ::somDoJogo }
+    }
+
+    /** Traduz o aviso do motor no efeito sonoro certo. */
+    private fun somDoJogo(e: EfeitoJogo) {
+        when (e) {
+            EfeitoJogo.PULO -> Som.tocar(Som.Efeito.PULO, 0.9f, 0.06f)
+            EfeitoJogo.GOLPE -> Som.tocar(Som.Efeito.ESPADA, 0.9f, 0.10f)
+            EfeitoJogo.ACERTO -> Som.tocar(Som.Efeito.IMPACTO, 1f, 0.12f)
+            EfeitoJogo.MORRE -> Som.tocar(Som.Efeito.GOBLIN_MORRE, 0.9f, 0.15f)
+            EfeitoJogo.DOR -> Som.tocar(Som.Efeito.DOR, 1f, 0.08f)
+            EfeitoJogo.PEGOU -> Som.tocar(Som.Efeito.PICKUP, 1f)
+            EfeitoJogo.FIM -> Som.tocar(Som.Efeito.DERROTA, 1f)
+        }
     }
 
     override fun doFrame(frameTimeNanos: Long) {
@@ -162,10 +182,16 @@ class GameView(
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
         val toqueNovo = ev.actionMasked == MotionEvent.ACTION_DOWN
+        if (toqueNovo && estado != Estado.INICIO && estado != Estado.FIM && btnSom.contem(ev.x, ev.y)) {
+            Som.definirLigado(!Som.ligado)
+            Som.tocar(Som.Efeito.CLIQUE)
+            invalidate()
+            return true
+        }
         when (estado) {
-            Estado.INICIO -> if (toqueNovo) { novoEngine(); estado = Estado.JOGANDO }
+            Estado.INICIO -> if (toqueNovo) { Som.tocar(Som.Efeito.CLIQUE); novoEngine(); estado = Estado.JOGANDO }
             Estado.PAUSADO -> if (toqueNovo) estado = Estado.JOGANDO
-            Estado.FIM -> if (toqueNovo && tempoFim > 0.8f) { novoEngine(); estado = Estado.JOGANDO }
+            Estado.FIM -> if (toqueNovo && tempoFim > 0.8f) { Som.tocar(Som.Efeito.CLIQUE); novoEngine(); estado = Estado.JOGANDO }
             Estado.JOGANDO -> controles(ev)
         }
         return true
@@ -395,6 +421,41 @@ class GameView(
         val direita = width - 8f * escala
         texto(c, "Pontos ${e.score}", direita, 11f * escala, 6.5f * escala, Paint.Align.RIGHT)
         texto(c, "Recorde $recorde", direita, 18.5f * escala, 4.5f * escala, Paint.Align.RIGHT, Color.parseColor("#FFE680"))
+        if (estado == Estado.JOGANDO || estado == Estado.PAUSADO) iconeSom(c)
+    }
+
+    /** Botão de som, no alto da tela (no meio, entre a vida e os pontos). */
+    private fun iconeSom(c: Canvas) {
+        val b = btnSom
+        pCor.style = Paint.Style.FILL
+        pCor.color = Color.argb(60, 255, 255, 255)
+        c.drawCircle(b.cx, b.cy, b.r, pCor)
+        pLinha.color = Color.argb(150, 255, 255, 255)
+        pLinha.strokeWidth = 2f * dp
+        c.drawCircle(b.cx, b.cy, b.r, pLinha)
+
+        val s = b.r / 14f
+        pCor.color = Color.WHITE
+        c.drawRect(b.cx - 6f * s, b.cy - 3f * s, b.cx - 2.5f * s, b.cy + 3f * s, pCor)
+        caminho.reset()
+        caminho.moveTo(b.cx - 2.5f * s, b.cy - 3f * s)
+        caminho.lineTo(b.cx + 1.5f * s, b.cy - 7.5f * s)
+        caminho.lineTo(b.cx + 1.5f * s, b.cy + 7.5f * s)
+        caminho.lineTo(b.cx - 2.5f * s, b.cy + 3f * s)
+        caminho.close()
+        c.drawPath(caminho, pCor)
+
+        if (Som.ligado) {
+            pLinha.color = Color.WHITE
+            pLinha.strokeWidth = 2f * s
+            c.drawLine(b.cx + 3.5f * s, b.cy - 4f * s, b.cx + 7f * s, b.cy, pLinha)
+            c.drawLine(b.cx + 7f * s, b.cy, b.cx + 3.5f * s, b.cy + 4f * s, pLinha)
+        } else {
+            pLinha.color = Color.parseColor("#FF6B5E")
+            pLinha.strokeWidth = 2.2f * s
+            c.drawLine(b.cx + 2f * s, b.cy - 5f * s, b.cx + 8f * s, b.cy + 5f * s, pLinha)
+            c.drawLine(b.cx + 8f * s, b.cy - 5f * s, b.cx + 2f * s, b.cy + 5f * s, pLinha)
+        }
     }
 
     private fun desenharControles(c: Canvas, e: GameEngine) {

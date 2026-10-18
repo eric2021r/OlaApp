@@ -1,7 +1,6 @@
-# Olá App
+# Eric App
 
-App Android simples em Kotlin (um botão com contador, mostrando a versão do Android e a arquitetura do aparelho).
-Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM64 ou x86).
+App Android simples em Kotlin, sem dependências externas: um contador, uma calculadora e dois jogos (Aventura da Espada 2D e Coliseu do Eric 3D). Os desenhos e os sons são gerados por código, então o APK é leve e funciona em qualquer celular (ARM, ARM64 ou x86).
 
 ## O que tem no app
 - **Contador:** o botão da tela inicial conta os cliques.
@@ -15,6 +14,13 @@ Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM6
   - Subir de nível aumenta o dano de cada lutador (+10% por nível).
 
 - **Coliseu do Eric (3D):** jogo 3D em terceira pessoa, em tela cheia na horizontal. Você (o lutador escolhido no menu) luta numa arena medieval contra rodadas de goblins (com um goblin chefe a cada 5 rounds). Use o joystick à esquerda para andar, `ATACAR` para usar a arma, `ROLAR` para desviar (você fica invulnerável por um instante) e arraste o dedo à direita para girar a câmera. Feito com OpenGL ES, que já vem no Android, sem bibliotecas nem arquivos de imagem: o cenário, os personagens e as armas são gerados no código (`coliseu/`).
+
+## Sons
+Todos os sons são **efeitos** (não tem música) e são gerados por código, sem nenhum arquivo de áudio no projeto:
+- O `Som.kt` calcula cada efeito (ondas, ruído e envelope), grava um WAV pequeno na pasta de cache do aparelho e toca com o `SoundPool`, que deixa vários sons soarem ao mesmo tempo (importante numa briga). São 19 efeitos: clique de menu, moeda, subir de nível, espada, machado, adaga, impacto, goblin morrendo, goblin gritando, o chefe chegando, começo e fim de rodada, pulo, pegar item etc.
+- Os dois motores (`ColiseuEngine` e `GameEngine`) continuam sem conhecer nada do Android: eles só **avisam** o que aconteceu (`EfeitoColiseu` / `EfeitoJogo`) e a tela escolhe e toca o som certo.
+- **Botão de som:** na tela inicial, no menu do Coliseu e no alto dos dois jogos (ícone de alto-falante). A escolha fica salva no aparelho (SharedPreferences `olaapp`, chave `som_ligado`), então o app abre do jeito que você deixou.
+- Para mexer nos sons, as "receitas" estão em `Som.kt` (função `gerar`). Depois de mudar, troque a constante `VERSAO` para o app regravar os arquivos.
 
 ## Ícone do app
 O ícone é o **goblin do Coliseu segurando o porrete com pregos**, no estilo "blocos" do jogo (pele verde, orelhas pontudas, olhos amarelos, colete de couro e pano vermelho), sobre um fundo escuro com brilho de arena.
@@ -34,8 +40,8 @@ A cada tag `v*` (ou quando o workflow **Release APK** é executado manualmente n
 
 Para publicar uma release nova, crie e envie uma tag (**sempre uma tag nova**):
 ```
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 ## Como gerar o APK

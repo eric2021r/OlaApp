@@ -13,6 +13,7 @@ import android.widget.FrameLayout
 import com.example.olaapp.coliseu.ColiseuHud
 import com.example.olaapp.coliseu.ColiseuRenderer
 import com.example.olaapp.coliseu.ColiseuSessao
+import com.example.olaapp.coliseu.EfeitoColiseu
 import com.example.olaapp.coliseu.Personagem
 
 /** "Coliseu do Eric": o jogo 3D. O 3D fica no GLSurfaceView e a interface (vida, botões, menus) por cima. */
@@ -20,13 +21,15 @@ class ColiseuActivity : Activity() {
 
     private lateinit var tela3d: GLSurfaceView
     private lateinit var sessao: ColiseuSessao
+    private var personagem = Personagem.CAVALEIRO
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val personagem = Personagem.porId(intent.getStringExtra(EXTRA_PERSONAGEM))
+        Som.iniciar(this)
+        personagem = Personagem.porId(intent.getStringExtra(EXTRA_PERSONAGEM))
         val nivel = intent.getIntExtra(EXTRA_NIVEL, 1)
-        sessao = ColiseuSessao(personagem, nivel)
+        sessao = ColiseuSessao(personagem, nivel, aoSom = ::somDoColiseu)
 
         val prefs = getSharedPreferences("olaapp", MODE_PRIVATE)
         val progresso = Progresso(this)
@@ -64,6 +67,7 @@ class ColiseuActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        Som.retomar()
         tela3d.onResume()
         esconderBarras()
     }
@@ -72,8 +76,30 @@ class ColiseuActivity : Activity() {
         sessao.pausado = true   // se saiu do app no meio da partida, volta pausado
         sessao.stickX = 0f
         sessao.stickY = 0f
+        Som.pausar()
         tela3d.onPause()
         super.onPause()
+    }
+
+    /** Traduz o aviso do motor no efeito sonoro certo (a arma depende do lutador). */
+    private fun somDoColiseu(e: EfeitoColiseu) {
+        when (e) {
+            EfeitoColiseu.COMECO -> Som.tocar(Som.Efeito.ROUND, 0.9f)
+            EfeitoColiseu.ROUND -> Som.tocar(Som.Efeito.VITORIA, 0.9f)
+            EfeitoColiseu.ROLAR -> Som.tocar(Som.Efeito.ROLAR, 0.9f, 0.08f)
+            EfeitoColiseu.ATAQUE -> when (personagem) {
+                Personagem.CAVALEIRO -> Som.tocar(Som.Efeito.ESPADA, 0.9f, 0.08f)
+                Personagem.LUTADOR -> Som.tocar(Som.Efeito.MACHADO, 1f, 0.07f)
+                Personagem.ASSASSINO -> Som.tocar(Som.Efeito.ADAGA, 0.9f, 0.08f)
+            }
+            EfeitoColiseu.IMPACTO -> Som.tocar(Som.Efeito.IMPACTO, 1f, 0.10f)
+            EfeitoColiseu.IMPACTO_FORTE -> Som.tocar(Som.Efeito.IMPACTO_FORTE, 1f, 0.06f)
+            EfeitoColiseu.MORRE -> Som.tocar(Som.Efeito.GOBLIN_MORRE, 0.9f, 0.12f)
+            EfeitoColiseu.GRITA -> Som.tocar(Som.Efeito.GOBLIN_GRITA, 0.8f, 0.15f)
+            EfeitoColiseu.ROAR -> Som.tocar(Som.Efeito.ROAR, 1f)
+            EfeitoColiseu.DOR -> Som.tocar(Som.Efeito.DOR, 1f, 0.08f)
+            EfeitoColiseu.DERROTA -> Som.tocar(Som.Efeito.DERROTA, 1f)
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

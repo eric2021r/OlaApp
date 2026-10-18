@@ -37,6 +37,7 @@ class MenuActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Som.iniciar(this)
         progresso = Progresso(this)
         selecionado = Personagem.porId(intent.getStringExtra(EXTRA_SELECIONADO))
 
@@ -84,10 +85,25 @@ class MenuActivity : Activity() {
         coluna.addView(Button(this).apply {
             text = "JOGAR"
             textSize = 22f
-            setOnClickListener { jogar() }
+            setOnClickListener {
+                Som.tocar(Som.Efeito.CLIQUE)
+                jogar()
+            }
         }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = (8 * dp).toInt() })
+
+        coluna.addView(Button(this).apply {
+            text = Som.rotulo()
+            textSize = 15f
+            setOnClickListener {
+                Som.definirLigado(!Som.ligado)
+                text = Som.rotulo()
+                Som.tocar(Som.Efeito.CLIQUE)
+            }
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = (6 * dp).toInt() })
 
         setContentView(ScrollView(this).apply { addView(coluna) })
     }
@@ -113,11 +129,20 @@ class MenuActivity : Activity() {
         val linha = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val botaoSubir = Button(this).apply {
             textSize = 13f
-            setOnClickListener { if (progresso.subirNivel(p)) atualizar() }
+            setOnClickListener {
+                if (progresso.subirNivel(p)) {
+                    Som.tocar(Som.Efeito.COMPRA)
+                    atualizar()
+                } else {
+                    Som.tocar(Som.Efeito.ERRO)
+                    atualizar()
+                }
+            }
         }
         val botaoEscolher = Button(this).apply {
             textSize = 13f
             setOnClickListener {
+                Som.tocar(Som.Efeito.CLIQUE)
                 selecionado = p
                 atualizar()
             }
@@ -143,8 +168,12 @@ class MenuActivity : Activity() {
                 c.botaoSubir.text = "Nível máximo"
                 c.botaoSubir.isEnabled = false
             } else {
-                c.botaoSubir.text = "Subir nível • $custo moedas"
-                c.botaoSubir.isEnabled = progresso.moedas >= custo
+                // o botão continua clicável mesmo sem moedas, para avisar com o som de erro
+                c.botaoSubir.text = if (progresso.moedas >= custo)
+                    "Subir nível • $custo moedas"
+                else
+                    "Faltam ${custo - progresso.moedas} moedas"
+                c.botaoSubir.isEnabled = true
             }
 
             val escolhido = selecionado == p

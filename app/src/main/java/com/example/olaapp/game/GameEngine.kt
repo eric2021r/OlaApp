@@ -39,6 +39,12 @@ enum class MonsterType(
     BAT(1, 15, 12f, 8f, 2f, 3f, 0xFF9A58D0.toInt())
 }
 
+/**
+ * Avisos de som da partida. O motor só avisa o que aconteceu; quem escolhe e toca o efeito
+ * é a tela (veja [GameEngine.aoSom]), porque o motor não conhece nada do Android.
+ */
+enum class EfeitoJogo { PULO, GOLPE, ACERTO, MORRE, DOR, PEGOU, FIM }
+
 class Monster(val type: MonsterType, x: Float, y: Float) :
     Actor(x, y, type.w, type.h, type.offX, type.offY) {
     var hp = type.hp
@@ -82,6 +88,13 @@ class GameEngine(seed: Long, val viewW: Float) {
     }
 
     private val rng = Random(seed)
+
+    /** Quem quiser saber dos sons da partida se inscreve aqui (a tela liga isso). */
+    var aoSom: ((EfeitoJogo) -> Unit)? = null
+
+    private fun som(e: EfeitoJogo) {
+        aoSom?.invoke(e)
+    }
 
     // ---- mundo
     private val ground = ArrayList<Int>() // linha da superfície por coluna; -1 = buraco
@@ -133,6 +146,7 @@ class GameEngine(seed: Long, val viewW: Float) {
         attackT = 0f
         swingId++
         attackCd = 0.38f
+        som(EfeitoJogo.GOLPE)
     }
 
     // ============================================================ laço
@@ -164,7 +178,7 @@ class GameEngine(seed: Long, val viewW: Float) {
 
         val d = ((hero.x - startX) / TILE).toInt()
         if (d > distance) distance = d
-        if (hero.y > VIEW_H + 20f) gameOver = true
+        if (hero.y > VIEW_H + 20f) { gameOver = true; som(EfeitoJogo.FIM) }
     }
 
     // ============================================================ herói
@@ -194,6 +208,7 @@ class GameEngine(seed: Long, val viewW: Float) {
             h.onGround = false
             coyote = 0f
             jumpBuf = 0f
+            som(EfeitoJogo.PULO)
         }
         if (!jumpHeld && h.vy < -110f) h.vy = -110f // soltou o botão: pulo mais curto
 
@@ -221,6 +236,7 @@ class GameEngine(seed: Long, val viewW: Float) {
                 m.lastSwing = swingId
                 m.hp--
                 m.hitFlash = 0.15f
+                som(EfeitoJogo.ACERTO)
                 m.stun = 0.2f
                 m.vx = h.facing * 130f
                 if (m.type != MonsterType.BAT) m.vy = -70f
@@ -233,6 +249,7 @@ class GameEngine(seed: Long, val viewW: Float) {
         monsters.remove(m)
         kills++
         bonus += m.type.points
+        som(EfeitoJogo.MORRE)
         repeat(9) {
             particles.add(
                 Particle(
@@ -256,7 +273,8 @@ class GameEngine(seed: Long, val viewW: Float) {
                 h.vx = (if (h.x < m.x) -1f else 1f) * 130f
                 h.vy = -140f
                 h.onGround = false
-                if (hp <= 0) gameOver = true
+                som(EfeitoJogo.DOR)
+                if (hp <= 0) { gameOver = true; som(EfeitoJogo.FIM) }
                 return
             }
         }
@@ -271,6 +289,7 @@ class GameEngine(seed: Long, val viewW: Float) {
                 it.remove()
                 if (hp < MAX_HP) hp++
                 bonus += 25
+                som(EfeitoJogo.PEGOU)
             }
         }
     }

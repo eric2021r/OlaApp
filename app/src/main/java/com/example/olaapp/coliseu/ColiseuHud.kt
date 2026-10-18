@@ -9,6 +9,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.view.MotionEvent
 import android.view.View
+import com.example.olaapp.Som
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -42,6 +43,7 @@ class ColiseuHud(
     private val btnAtaque = Botao()
     private val btnRolar = Botao()
     private val btnPausa = Botao()
+    private val btnSom = Botao()
 
     private val pCor = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pLinha = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
@@ -75,6 +77,7 @@ class ColiseuHud(
         btnAtaque.apply { r = 46f * dp; cx = w - m - r; cy = h - m - r }
         btnRolar.apply { r = 34f * dp; cx = btnAtaque.cx - btnAtaque.r - r - 14f * dp; cy = h - m - r - 4f * dp }
         btnPausa.apply { r = 17f * dp; cx = w - 14f * dp - r; cy = 14f * dp + r }
+        btnSom.apply { r = 17f * dp; cx = btnPausa.cx; cy = btnPausa.cy + btnPausa.r * 2f + 10f * dp }
     }
 
     // ============================================================ toques
@@ -84,9 +87,9 @@ class ColiseuHud(
         val acao = ev.actionMasked
         val novo = acao == MotionEvent.ACTION_DOWN
         when {
-            !foto.iniciado -> { if (novo) sessao.novoJogo() }
-            foto.fase == Fase.FIM -> { if (novo && foto.tFim > 1.5f) sessao.novoJogo() }
-            sessao.pausado -> { if (novo) sessao.pausado = false }
+            !foto.iniciado -> if (novo) { Som.tocar(Som.Efeito.CLIQUE); sessao.novoJogo() }
+            foto.fase == Fase.FIM -> if (novo && foto.tFim > 1.5f) { Som.tocar(Som.Efeito.CLIQUE); sessao.novoJogo() }
+            sessao.pausado -> if (novo) sessao.pausado = false
             else -> controles(ev, acao)
         }
         return true
@@ -112,6 +115,10 @@ class ColiseuHud(
         when {
             btnAtaque.contem(x, y) -> { idAtaque = id; sessao.engine.atacar() }
             btnRolar.contem(x, y) -> { idRolar = id; sessao.engine.rolar() }
+            btnSom.contem(x, y) -> {
+                Som.definirLigado(!Som.ligado)
+                Som.tocar(Som.Efeito.CLIQUE)
+            }
             btnPausa.contem(x, y) -> sessao.pausado = true
             x < width * 0.5f && idStick == -1 -> {
                 idStick = id
@@ -172,6 +179,7 @@ class ColiseuHud(
                 }
                 moedasGanhas = moedasDoResultado(f.round, f.pontos, f.abates)
                 aoGanharMoedas(moedasGanhas)
+                Som.tocar(Som.Efeito.MOEDA)
             }
         } else registrado = false
 
@@ -251,6 +259,40 @@ class ColiseuHud(
         val bh = 12f * dp
         c.drawRect(btnPausa.cx - 5.5f * dp, btnPausa.cy - bh / 2f, btnPausa.cx - 5.5f * dp + bw, btnPausa.cy + bh / 2f, pCor)
         c.drawRect(btnPausa.cx + 1.5f * dp, btnPausa.cy - bh / 2f, btnPausa.cx + 1.5f * dp + bw, btnPausa.cy + bh / 2f, pCor)
+        // botão de som (embaixo do de pausa)
+        pCor.style = Paint.Style.FILL
+        pCor.color = Color.argb(110, 0, 0, 0)
+        c.drawCircle(btnSom.cx, btnSom.cy, btnSom.r, pCor)
+        iconeSom(c, btnSom)
+    }
+
+    /** Alto-falante; com o som desligado vem um X vermelho em cima. */
+    private fun iconeSom(c: Canvas, b: Botao) {
+        val s = b.r / 17f
+        pCor.style = Paint.Style.FILL
+        pCor.color = Color.WHITE
+        retang.set(b.cx - 8f * s, b.cy - 3.5f * s, b.cx - 3.5f * s, b.cy + 3.5f * s)
+        c.drawRect(retang, pCor)
+        caminho.reset()
+        caminho.moveTo(b.cx - 3.5f * s, b.cy - 3.5f * s)
+        caminho.lineTo(b.cx + 1.5f * s, b.cy - 9f * s)
+        caminho.lineTo(b.cx + 1.5f * s, b.cy + 9f * s)
+        caminho.lineTo(b.cx - 3.5f * s, b.cy + 3.5f * s)
+        caminho.close()
+        c.drawPath(caminho, pCor)
+        if (Som.ligado) {
+            pLinha.color = Color.WHITE
+            pLinha.strokeWidth = 2f * s
+            retang.set(b.cx - 1f * s, b.cy - 6f * s, b.cx + 9f * s, b.cy + 6f * s)
+            c.drawArc(retang, -52f, 104f, false, pLinha)
+            retang.set(b.cx - 1f * s, b.cy - 9.5f * s, b.cx + 14f * s, b.cy + 9.5f * s)
+            c.drawArc(retang, -52f, 104f, false, pLinha)
+        } else {
+            pLinha.color = Color.rgb(255, 105, 90)
+            pLinha.strokeWidth = 2.6f * s
+            c.drawLine(b.cx + 1f * s, b.cy - 6f * s, b.cx + 11f * s, b.cy + 6f * s, pLinha)
+            c.drawLine(b.cx + 11f * s, b.cy - 6f * s, b.cx + 1f * s, b.cy + 6f * s, pLinha)
+        }
     }
 
     private fun avisos(c: Canvas, f: Foto) {

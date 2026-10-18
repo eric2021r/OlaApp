@@ -19,6 +19,12 @@ enum class Fase { INTRO, LUTA, VENCEU, FIM }
 
 enum class GoblinEstado { PERSEGUIR, RONDAR, PREPARAR, GOLPE, RECUPERAR }
 
+/**
+ * Avisos de som do jogo. O motor só avisa o que aconteceu; quem escolhe e toca o efeito
+ * é a tela (veja [ColiseuEngine.aoSom]), porque o motor não conhece nada do Android.
+ */
+enum class EfeitoColiseu { COMECO, ROLAR, ATAQUE, IMPACTO, IMPACTO_FORTE, MORRE, GRITA, ROAR, DOR, ROUND, DERROTA }
+
 class Goblin(
     val chefe: Boolean,
     var x: Float, var z: Float,
@@ -97,6 +103,13 @@ class ColiseuEngine(
 
     private val rng = Random(seed)
     private var acc = 0f
+
+    /** Quem quiser saber dos sons da partida se inscreve aqui (a tela liga isso). */
+    var aoSom: ((EfeitoColiseu) -> Unit)? = null
+
+    private fun som(e: EfeitoColiseu) {
+        aoSom?.invoke(e)
+    }
 
     // ---- estado geral
     var time = 0f; private set
@@ -239,6 +252,7 @@ class ColiseuEngine(
         val n = min(2 + round, 10)
         for (i in 0 until n) chegadas.add(Chegada(0.4f + i * 0.9f, false, (i + round) % PORTOES.size))
         if (round % 5 == 0) chegadas.add(Chegada(3f, true, round % PORTOES.size))
+        som(EfeitoColiseu.COMECO)
     }
 
     private fun venceuRound() {
@@ -246,6 +260,7 @@ class ColiseuEngine(
         tFase = VENCEU_T
         pontos += 200 * round
         hp = min(JOGADOR_HP, hp + CURA_ENTRE_ROUNDS)
+        som(EfeitoColiseu.ROUND)
     }
 
     private fun chegarGoblins(dt: Float) {
@@ -260,6 +275,7 @@ class ColiseuEngine(
     }
 
     private fun criarGoblin(c: Chegada) {
+        if (c.chefe) som(EfeitoColiseu.ROAR)
         val ang = PORTOES[c.portao]
         val x = cos(ang) * PORTAO_R
         val z = sin(ang) * PORTAO_R
@@ -295,6 +311,7 @@ class ColiseuEngine(
             ataqueT = -1f
             bufRolar = 0f
             bufAtaque = 0f
+            som(EfeitoColiseu.ROLAR)
         }
 
         // ataque
@@ -306,6 +323,7 @@ class ColiseuEngine(
             mirarNoMaisPerto()
             kx += frenteX * 6f
             kz += frenteZ * 6f
+            som(EfeitoColiseu.ATAQUE)
         }
 
         var vx = 0f
@@ -415,6 +433,7 @@ class ColiseuEngine(
 
     private fun levarGolpe(g: Goblin, dirX: Float, dirZ: Float) {
         g.hp -= danoGolpe
+        som(if (g.chefe) EfeitoColiseu.IMPACTO_FORTE else EfeitoColiseu.IMPACTO)
         g.brilho = 0.16f
         g.kx = dirX * (if (g.chefe) 3.5f else 7f)
         g.kz = dirZ * (if (g.chefe) 3.5f else 7f)
@@ -431,6 +450,7 @@ class ColiseuEngine(
         if (g.hp <= 0f) {
             g.morrendo = 0f
             abates++
+            som(EfeitoColiseu.MORRE)
             pontos += if (g.chefe) 500 else 100
             explodir(g.x, 0.9f * g.escala, g.z, 16, 0.45f, 0.75f, 0.2f, 5.5f, 0.16f)
         }
@@ -441,6 +461,7 @@ class ColiseuEngine(
         if (morto || invulneravel > 0f || (rolarT >= 0f && rolarT < ROLAR_INVULNERAVEL)) return false
         hp -= dano
         invulneravel = 0.7f
+        som(EfeitoColiseu.DOR)
         flashDano = 0.4f
         ataqueT = -1f
         val dx = px - deX
@@ -457,6 +478,7 @@ class ColiseuEngine(
             fase = Fase.FIM
             ataqueT = -1f
             rolarT = -1f
+            som(EfeitoColiseu.DERROTA)
         }
         return true
     }
@@ -500,6 +522,7 @@ class ColiseuEngine(
                 GoblinEstado.PERSEGUIR -> {
                     if (!morto && d < g.alcance * 0.85f && atacantes < maxAtacantes) {
                         g.estado = GoblinEstado.PREPARAR; g.tEstado = 0f
+                        som(EfeitoColiseu.GRITA)
                     } else if (!morto && d < 3.6f && atacantes >= maxAtacantes) {
                         g.estado = GoblinEstado.RONDAR; g.tEstado = 0f
                     } else if (!morto) {

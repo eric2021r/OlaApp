@@ -35,10 +35,12 @@ class GameActivity : Activity() {
     override fun onResume() {
         super.onResume()
         esconderBarras()
+        Som.retomar()
         jogo.retomar()
     }
 
     override fun onPause() {
+        Som.pausar()
         jogo.pausar()
         super.onPause()
     }

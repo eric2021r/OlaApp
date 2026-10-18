@@ -23,6 +23,7 @@ class CalculadoraActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        Som.iniciar(this)
         val pad = (16 * dp).toInt()
 
         historico = TextView(this).apply {
@@ -153,6 +154,7 @@ class CalculadoraActivity : Activity() {
             background = RippleDrawable(ColorStateList.valueOf(Color.parseColor("#33000000")), forma, null)
             setOnClickListener {
                 tecla.acao()
+                Som.tocar(Som.Efeito.CLIQUE, 0.7f)
                 atualizar()
             }
         }

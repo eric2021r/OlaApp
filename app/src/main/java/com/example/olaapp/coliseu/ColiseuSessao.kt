@@ -30,10 +30,16 @@ class Foto(
  */
 class ColiseuSessao(
     val personagem: Personagem = Personagem.CAVALEIRO,
-    val nivel: Int = 1
+    val nivel: Int = 1,
+    /** Avisos de som do motor. O motor não conhece o Android; quem toca é a tela. */
+    private val aoSom: ((EfeitoColiseu) -> Unit)? = null
 ) {
 
     @Volatile var engine = ColiseuEngine(personagem = personagem, nivel = nivel)
+
+    init {
+        engine.aoSom = aoSom
+    }
 
     // câmera (a interface gira, o desenho lê)
     @Volatile var camYaw = 0f
@@ -67,6 +73,7 @@ class ColiseuSessao(
     /** Começa uma partida nova (também usado para "jogar de novo"). */
     fun novoJogo() {
         val e = ColiseuEngine(personagem = personagem, nivel = nivel)
+        e.aoSom = aoSom
         e.comecar()
         engine = e
         camYaw = 0f
