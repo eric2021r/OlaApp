@@ -16,6 +16,18 @@ Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM6
 
 - **Coliseu do Eric (3D):** jogo 3D em terceira pessoa, em tela cheia na horizontal. Você (o lutador escolhido no menu) luta numa arena medieval contra rodadas de goblins (com um goblin chefe a cada 5 rounds). Use o joystick à esquerda para andar, `ATACAR` para usar a arma, `ROLAR` para desviar (você fica invulnerável por um instante) e arraste o dedo à direita para girar a câmera. Feito com OpenGL ES, que já vem no Android, sem bibliotecas nem arquivos de imagem: o cenário, os personagens e as armas são gerados no código (`coliseu/`).
 
+## Baixar o APK pronto (release)
+A cada tag `v*` (ou quando o workflow **Release APK** é executado manualmente na aba *Actions*), o GitHub Actions compila e publica uma **release** com o `app-debug.apk` anexado.
+1. Abra a aba **Releases** do repositório (https://github.com/eric2021r/OlaApp/releases).
+2. Baixe o **app-debug.apk** da release mais recente.
+3. Instale no celular (permita "instalar apps de fontes desconhecidas").
+
+Para publicar uma release nova, crie e envie uma tag:
+```
+git tag v1.0
+git push origin v1.0
+```
+
 ## Como gerar o APK
 
 ### Opção 1: GitHub Actions (sem instalar nada)
