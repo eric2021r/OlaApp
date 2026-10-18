@@ -18,6 +18,12 @@
         </activity>
 
         <activity
+            android:name=".MenuActivity"
+            android:label="Coliseu do Eric"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <activity
             android:name=".CalculadoraActivity"
             android:label="Calculadora"
             android:exported="false" />

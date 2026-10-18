@@ -28,9 +28,12 @@ class Foto(
  * Liga o motor do jogo aos controles e à tela. Não usa nada do Android.
  * A thread do desenho chama [atualizar] a cada quadro; a interface só escreve nos campos de entrada.
  */
-class ColiseuSessao {
+class ColiseuSessao(
+    val personagem: Personagem = Personagem.CAVALEIRO,
+    val nivel: Int = 1
+) {
 
-    @Volatile var engine = ColiseuEngine()
+    @Volatile var engine = ColiseuEngine(personagem = personagem, nivel = nivel)
 
     // câmera (a interface gira, o desenho lê)
     @Volatile var camYaw = 0f
@@ -63,7 +66,7 @@ class ColiseuSessao {
 
     /** Começa uma partida nova (também usado para "jogar de novo"). */
     fun novoJogo() {
-        val e = ColiseuEngine()
+        val e = ColiseuEngine(personagem = personagem, nivel = nivel)
         e.comecar()
         engine = e
         camYaw = 0f

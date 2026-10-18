@@ -13,17 +13,23 @@ import android.widget.FrameLayout
 import com.example.olaapp.coliseu.ColiseuHud
 import com.example.olaapp.coliseu.ColiseuRenderer
 import com.example.olaapp.coliseu.ColiseuSessao
+import com.example.olaapp.coliseu.Personagem
 
 /** "Coliseu do Eric": o jogo 3D. O 3D fica no GLSurfaceView e a interface (vida, botões, menus) por cima. */
 class ColiseuActivity : Activity() {
 
     private lateinit var tela3d: GLSurfaceView
-    private val sessao = ColiseuSessao()
+    private lateinit var sessao: ColiseuSessao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val personagem = Personagem.porId(intent.getStringExtra(EXTRA_PERSONAGEM))
+        val nivel = intent.getIntExtra(EXTRA_NIVEL, 1)
+        sessao = ColiseuSessao(personagem, nivel)
+
         val prefs = getSharedPreferences("olaapp", MODE_PRIVATE)
+        val progresso = Progresso(this)
 
         tela3d = GLSurfaceView(this).apply {
             setEGLContextClientVersion(2)
@@ -33,11 +39,13 @@ class ColiseuActivity : Activity() {
         }
 
         val interface2d = ColiseuHud(
-            this, sessao,
-            prefs.getInt(CHAVE_ROUND, 0), prefs.getInt(CHAVE_PONTOS, 0)
-        ) { round, pontos ->
-            prefs.edit().putInt(CHAVE_ROUND, round).putInt(CHAVE_PONTOS, pontos).apply()
-        }
+            this, sessao, personagem, nivel,
+            prefs.getInt(CHAVE_ROUND, 0), prefs.getInt(CHAVE_PONTOS, 0),
+            aoNovoRecorde = { round, pontos ->
+                prefs.edit().putInt(CHAVE_ROUND, round).putInt(CHAVE_PONTOS, pontos).apply()
+            },
+            aoGanharMoedas = { moedas -> progresso.moedas = progresso.moedas + moedas }
+        )
 
         val raiz = FrameLayout(this)
         raiz.addView(tela3d, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
@@ -92,6 +100,9 @@ class ColiseuActivity : Activity() {
     }
 
     companion object {
+        const val EXTRA_PERSONAGEM = "personagem"
+        const val EXTRA_NIVEL = "nivel"
+
         private const val CHAVE_ROUND = "coliseu_recorde_round"
         private const val CHAVE_PONTOS = "coliseu_recorde_pontos"
     }

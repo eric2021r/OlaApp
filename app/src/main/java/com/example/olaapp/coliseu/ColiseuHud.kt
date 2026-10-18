@@ -23,9 +23,12 @@ import kotlin.math.sin
 class ColiseuHud(
     context: Context,
     private val sessao: ColiseuSessao,
+    private val personagem: Personagem,
+    private val nivel: Int,
     private var recRound: Int,
     private var recPontos: Int,
-    private val aoNovoRecorde: (Int, Int) -> Unit
+    private val aoNovoRecorde: (Int, Int) -> Unit,
+    private val aoGanharMoedas: (Int) -> Unit
 ) : View(context) {
 
     private class Botao {
@@ -60,6 +63,7 @@ class ColiseuHud(
 
     private var registrado = false
     private var novoRecorde = false
+    private var moedasGanhas = 0
     private var tempoTela = 0f
     private var ultimo = 0L
 
@@ -166,6 +170,8 @@ class ColiseuHud(
                     recPontos = max(recPontos, f.pontos)
                     aoNovoRecorde(recRound, recPontos)
                 }
+                moedasGanhas = moedasDoResultado(f.round, f.pontos, f.abates)
+                aoGanharMoedas(moedasGanhas)
             }
         } else registrado = false
 
@@ -361,7 +367,8 @@ class ColiseuHud(
         texto(c, "COLISEU", cx, height * 0.34f, 64f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
         texto(c, "DO ERIC", cx, height * 0.34f + 56f * dp, 56f * dp, Paint.Align.CENTER)
         texto(c, "Sobreviva às rodadas de goblins", cx, height * 0.62f, 20f * dp, Paint.Align.CENTER, Color.rgb(235, 225, 205))
-        if (piscar()) texto(c, "Toque para começar", cx, height * 0.74f, 26f * dp, Paint.Align.CENTER)
+        texto(c, "${personagem.nome}  •  Nível $nivel", cx, height * 0.68f, 17f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
+        if (piscar()) texto(c, "Toque para começar", cx, height * 0.76f, 26f * dp, Paint.Align.CENTER)
         if (recRound > 0) {
             texto(c, "Recorde: round $recRound · $recPontos pontos", cx, height * 0.84f, 15f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
         }
@@ -381,11 +388,18 @@ class ColiseuHud(
         texto(c, "VOCÊ CAIU NO COLISEU", cx, height * 0.27f, 40f * dp, Paint.Align.CENTER, Color.rgb(255, 105, 90))
         texto(c, "Round ${f.round}  ·  ${f.pontos} pontos", cx, height * 0.43f, 30f * dp, Paint.Align.CENTER)
         texto(c, "${f.abates} goblins derrotados", cx, height * 0.53f, 20f * dp, Paint.Align.CENTER, Color.rgb(225, 225, 225))
+        texto(c, "+$moedasGanhas moedas", cx, height * 0.60f, 24f * dp, Paint.Align.CENTER, Color.rgb(255, 214, 79))
         if (novoRecorde) {
-            texto(c, "NOVO RECORDE!", cx, height * 0.66f, 30f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
+            texto(c, "NOVO RECORDE!", cx, height * 0.68f, 30f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
         } else {
-            texto(c, "Recorde: round $recRound · $recPontos pontos", cx, height * 0.66f, 18f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
+            texto(c, "Recorde: round $recRound · $recPontos pontos", cx, height * 0.68f, 18f * dp, Paint.Align.CENTER, Color.rgb(255, 224, 130))
         }
         if (f.tFim > 1.5f && piscar()) texto(c, "Toque para jogar de novo", cx, height * 0.82f, 24f * dp, Paint.Align.CENTER)
+    }
+
+    companion object {
+        /** Moedas ganhas ao terminar a partida: quanto melhor o desempenho, mais moedas. */
+        fun moedasDoResultado(round: Int, pontos: Int, abates: Int): Int =
+            round * 15 + abates * 3 + pontos / 50
     }
 }

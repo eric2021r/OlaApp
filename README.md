@@ -8,7 +8,13 @@ Sem dependências externas, então o APK funciona em qualquer celular (ARM, ARM6
 - **Calculadora:** `+ − × ÷`, `%`, `±`, vírgula, apagar e limpar.
 - **Aventura da Espada:** jogo de plataforma 2D em pixel art, em tela cheia na horizontal. Corra, pule buracos e use a espada contra slimes, esqueletos e morcegos. Tem 3 corações, corações para recuperar vida, pontuação e recorde salvo no aparelho. Todos os desenhos estão no código (`game/SpriteData.kt`), sem arquivos de imagem.
 
-- **Coliseu do Eric (3D):** jogo 3D em terceira pessoa, em tela cheia na horizontal. Um cavaleiro luta numa arena medieval contra rodadas de goblins (com um goblin chefe a cada 5 rounds). Use o joystick à esquerda para andar, `ATACAR` para bater com a espada, `ROLAR` para desviar (você fica invulnerável por um instante) e arraste o dedo à direita para girar a câmera. Feito com OpenGL ES, que já vem no Android, sem bibliotecas nem arquivos de imagem: o cenário e os personagens são gerados no código (`coliseu/`).
+- **Menu do Coliseu:** tela mostrada antes do jogo começar. Nela você escolhe o lutador e gasta **moedas** para subir o nível de cada um (até o nível 20). O preço dobra no começo (1, 2, 4, 8, 16, 32…) mas para no teto de **50 moedas**, então dá para chegar ao nível 20 jogando poucas partidas. As moedas são ganhas ao terminar cada partida: quanto melhor o desempenho (rounds, goblins derrotados e pontos), mais moedas. Tudo é salvo no aparelho (`Progresso.kt`).
+  - **Cavaleiro:** espada e escudo. Dano normal (referência).
+  - **Lutador:** machado de lâmina dupla com cabo meio longo. Dano **2x** o do cavaleiro, mas o golpe é mais lento.
+  - **Assassino:** **lança adagas** (ataque à distância) mais rápido que os outros. Dano **1,5x** o do cavaleiro.
+  - Subir de nível aumenta o dano de cada lutador (+10% por nível).
+
+- **Coliseu do Eric (3D):** jogo 3D em terceira pessoa, em tela cheia na horizontal. Você (o lutador escolhido no menu) luta numa arena medieval contra rodadas de goblins (com um goblin chefe a cada 5 rounds). Use o joystick à esquerda para andar, `ATACAR` para usar a arma, `ROLAR` para desviar (você fica invulnerável por um instante) e arraste o dedo à direita para girar a câmera. Feito com OpenGL ES, que já vem no Android, sem bibliotecas nem arquivos de imagem: o cenário, os personagens e as armas são gerados no código (`coliseu/`).
 
 ## Como gerar o APK
 

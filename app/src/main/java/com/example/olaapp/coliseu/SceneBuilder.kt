@@ -2,6 +2,7 @@ package com.example.olaapp.coliseu
 
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -28,8 +29,9 @@ class SceneBuilder {
         destino.clear()
         destino.add(arena)
         chamas(e.time)
-        cavaleiro(e)
+        jogador(e)
         for (g in e.goblins) goblin(g, e)
+        adagasVoando(e)
         particulas(e)
     }
 
@@ -86,9 +88,9 @@ class SceneBuilder {
         saida.add(DrawItem(Meshes.CYLINDER, m, c[0], c[1], c[2]))
     }
 
-    // ============================================================ cavaleiro
+    // ============================================================ o jogador (lutador escolhido)
 
-    private fun cavaleiro(e: ColiseuEngine) {
+    private fun jogador(e: ColiseuEngine) {
         flash = 0f; aviso = 0f
         dano = if (e.invulneravel > 0f && ((e.time * 18f).toInt() % 2 == 0)) 0.55f else 0f
 
@@ -109,6 +111,26 @@ class SceneBuilder {
         }
         if (!e.morto && !e.rolando) sombra(e.px, e.pz, 0.95f) else if (e.rolando) sombra(e.px, e.pz, 0.8f)
 
+        when (e.personagem) {
+            Personagem.CAVALEIRO -> corpoCavaleiro(e, raiz)
+            Personagem.LUTADOR -> corpoLutador(e, raiz)
+            Personagem.ASSASSINO -> corpoAssassino(e, raiz)
+        }
+    }
+
+    /** Ângulo do braço da arma: repouso, levanta antes do golpe, desce no golpe e volta ao repouso. */
+    private fun anguloBraco(e: ColiseuEngine, repouso: Float, levantar: Float, golpe: Float): Float {
+        val t = e.ataqueT
+        return when {
+            t < 0f -> repouso
+            t < e.golpeInicio -> lerp(repouso, levantar, suave(t / e.golpeInicio))
+            t < e.golpeFim -> lerp(levantar, golpe, (t - e.golpeInicio) / (e.golpeFim - e.golpeInicio))
+            else -> lerp(golpe, repouso, suave((t - e.golpeFim) / (e.ataqueDur - e.golpeFim)))
+        }
+    }
+
+    /** Cavaleiro: armadura de aço, elmo com crista, espada e escudo. */
+    private fun corpoCavaleiro(e: ColiseuEngine, raiz: FloatArray) {
         val aco = 0x8E98A6
         val acoEscuro = 0x5C6573
         val couro = 0x4A3020
@@ -141,15 +163,8 @@ class SceneBuilder {
         caixa(raiz, 0f, 1.94f, -0.02f, 0.07f, 0.2f, 0.36f, 0xB3262B)   // crista vermelha
 
         // braço da espada
-        val t = e.ataqueT
         val repouso = -0.9f - sin(e.andarFase + PI.toFloat()) * 0.25f * e.andarFracao
-        val angBraco = when {
-            t < 0f -> repouso
-            t < ColiseuEngine.GOLPE_INICIO -> lerp(repouso, -2.9f, suave(t / ColiseuEngine.GOLPE_INICIO))
-            t < ColiseuEngine.GOLPE_FIM -> lerp(-2.9f, -0.55f, (t - ColiseuEngine.GOLPE_INICIO) / (ColiseuEngine.GOLPE_FIM - ColiseuEngine.GOLPE_INICIO))
-            else -> lerp(-0.55f, repouso, suave((t - ColiseuEngine.GOLPE_FIM) / (ColiseuEngine.ATAQUE_DUR - ColiseuEngine.GOLPE_FIM)))
-        }
-        val braco = membro(raiz, 0.43f, 1.42f, 0f, angBraco, 0.6f, 0.18f, 0.18f, aco)
+        val braco = membro(raiz, 0.43f, 1.42f, 0f, anguloBraco(e, repouso, -2.9f, -0.55f), 0.6f, 0.18f, 0.18f, aco)
         val mao = Math3D.mul(braco, Math3D.translate(0f, -0.62f, 0f))
         caixa(mao, 0f, 0f, 0f, 0.2f, 0.2f, 0.2f, couro)
         espada(mao)
@@ -161,7 +176,85 @@ class SceneBuilder {
         caixa(mao2, 0f, 0f, 0.045f, 0.07f, 0.5f, 0.02f, ouro, Meshes.CUBE, 0.55f)
         caixa(mao2, 0f, 0f, 0.045f, 0.4f, 0.07f, 0.02f, ouro, Meshes.CUBE, 0.55f)
         caixa(mao2, 0f, 0f, 0.06f, 0.14f, 0.14f, 0.05f, ouro, Meshes.SPHERE, 0.55f)
-        dano.let { }
+    }
+
+    /** Lutador: corpo forte, sem elmo, com um machado de lâmina dupla de cabo meio longo. */
+    private fun corpoLutador(e: ColiseuEngine, raiz: FloatArray) {
+        val pele = 0xD9A074
+        val couro = 0x6B4423
+        val couroEscuro = 0x4A3020
+        val bronze = 0xB3722B
+        val metal = 0x8E98A6
+        val balanco = sin(e.andarFase) * 0.8f * e.andarFracao
+
+        for (lado in intArrayOf(-1, 1)) {
+            val perna = membro(raiz, lado * 0.2f, 0.82f, 0f, balanco * lado, 0.82f, 0.28f, 0.3f, couroEscuro)
+            caixa(perna, 0f, -0.76f, 0.05f, 0.3f, 0.18f, 0.42f, couro)
+        }
+
+        // corpo largo e peito de couro
+        caixa(raiz, 0f, 1.14f, 0f, 0.78f, 0.66f, 0.42f, pele)
+        caixa(raiz, 0f, 1.2f, 0.21f, 0.6f, 0.5f, 0.05f, couro)
+        caixa(raiz, 0f, 0.86f, 0f, 0.8f, 0.12f, 0.46f, couroEscuro)
+        caixa(raiz, 0f, 0.86f, 0.25f, 0.16f, 0.14f, 0.05f, bronze)
+        caixa(raiz, -0.52f, 1.46f, 0f, 0.32f, 0.24f, 0.4f, metal, Meshes.SPHERE)
+        caixa(raiz, 0.52f, 1.46f, 0f, 0.32f, 0.24f, 0.4f, metal, Meshes.SPHERE)
+
+        // cabeça com faixa vermelha
+        caixa(raiz, 0f, 1.66f, 0f, 0.34f, 0.34f, 0.34f, pele)
+        caixa(raiz, 0f, 1.78f, 0f, 0.38f, 0.1f, 0.38f, 0xB3262B)
+        caixa(raiz, 0f, 1.6f, 0.18f, 0.12f, 0.06f, 0.03f, 0x1B1220)
+
+        // braço livre
+        membro(raiz, -0.52f, 1.44f, 0f, -0.5f + balanco * 0.3f, 0.56f, 0.2f, 0.2f, pele)
+        // braço do machado
+        val repouso = -1.05f - sin(e.andarFase + PI.toFloat()) * 0.2f * e.andarFracao
+        val braco = membro(raiz, 0.55f, 1.44f, 0f, anguloBraco(e, repouso, -3.05f, -0.4f), 0.64f, 0.21f, 0.21f, pele)
+        val mao = Math3D.mul(braco, Math3D.translate(0f, -0.66f, 0f))
+        caixa(mao, 0f, 0f, 0f, 0.22f, 0.22f, 0.22f, couroEscuro)
+        machado(mao)
+    }
+
+    /** Assassino: roupa escura e capuz, uma adaga em cada mão e o arremesso à distância. */
+    private fun corpoAssassino(e: ColiseuEngine, raiz: FloatArray) {
+        val pano = 0x2B2B36
+        val panoEscuro = 0x1C1C24
+        val pele = 0xE0B48C
+        val roxo = 0x6A3FA0
+        val balanco = sin(e.andarFase) * 0.9f * e.andarFracao
+
+        for (lado in intArrayOf(-1, 1)) {
+            val perna = membro(raiz, lado * 0.15f, 0.74f, 0f, balanco * lado, 0.74f, 0.2f, 0.22f, panoEscuro)
+            caixa(perna, 0f, -0.68f, 0.05f, 0.23f, 0.15f, 0.36f, panoEscuro)
+        }
+
+        caixa(raiz, 0f, 1.06f, 0f, 0.5f, 0.6f, 0.32f, pano)
+        caixa(raiz, 0f, 1.02f, 0.17f, 0.3f, 0.5f, 0.03f, roxo)
+        caixa(raiz, 0f, 0.78f, 0f, 0.54f, 0.1f, 0.36f, panoEscuro)
+        caixa(raiz, -0.34f, 1.34f, 0f, 0.24f, 0.18f, 0.3f, pano, Meshes.SPHERE)
+        caixa(raiz, 0.34f, 1.34f, 0f, 0.24f, 0.18f, 0.3f, pano, Meshes.SPHERE)
+
+        // cabeça, capuz e máscara
+        caixa(raiz, 0f, 1.52f, 0f, 0.28f, 0.28f, 0.28f, pele)
+        caixa(raiz, 0f, 1.62f, -0.04f, 0.36f, 0.3f, 0.34f, pano)
+        caixa(raiz, 0f, 1.56f, -0.16f, 0.34f, 0.34f, 0.08f, pano)
+        caixa(raiz, -0.1f, 1.68f, 0.12f, 0.14f, 0.05f, 0.05f, roxo)
+        caixa(raiz, 0.1f, 1.68f, 0.12f, 0.14f, 0.05f, 0.05f, roxo)
+        caixa(raiz, 0f, 1.48f, 0.15f, 0.22f, 0.22f, 0.05f, panoEscuro)
+
+        // braço esquerdo com a adaga
+        val repousoL = -0.75f + balanco * 0.3f
+        val bracoEsq = membro(raiz, -0.4f, 1.32f, 0f, anguloBraco(e, repousoL, -2.4f, 0.5f), 0.52f, 0.15f, 0.15f, pano)
+        val maoEsq = Math3D.mul(bracoEsq, Math3D.translate(0f, -0.54f, 0f))
+        caixa(maoEsq, 0f, 0f, 0f, 0.16f, 0.16f, 0.16f, pele)
+        adaga(maoEsq)
+
+        // braço direito: é ele que arremessa (no meio do arremesso a adaga some da mão)
+        val repouso = -0.9f - sin(e.andarFase + PI.toFloat()) * 0.2f * e.andarFracao
+        val bracoDir = membro(raiz, 0.4f, 1.32f, 0f, anguloBraco(e, repouso, -2.6f, 0.7f), 0.52f, 0.15f, 0.15f, pano)
+        val maoDir = Math3D.mul(bracoDir, Math3D.translate(0f, -0.54f, 0f))
+        caixa(maoDir, 0f, 0f, 0f, 0.16f, 0.16f, 0.16f, pele)
+        if (e.ataqueT < 0f || e.ataqueT < e.golpeInicio) adaga(maoDir)
     }
 
     /** Espada presa na mão: a lâmina continua o braço (para baixo no sistema da mão). */
@@ -173,6 +266,41 @@ class SceneBuilder {
         caixa(mao, 0f, -0.6f, 0f, 0.085f, 0.9f, 0.03f, 0xDCE3EA)                   // lâmina
         caixa(mao, 0f, -0.6f, 0.017f, 0.03f, 0.88f, 0.012f, 0xA9B4C0)              // friso
         caixa(mao, 0f, -1.1f, 0f, 0.085f, 0.14f, 0.03f, 0xDCE3EA, Meshes.PYRAMID, PI.toFloat()) // ponta
+    }
+
+    /** Machado de lâmina dupla com cabo meio longo, preso na mão (cabo para baixo). */
+    private fun machado(mao: FloatArray) {
+        val madeira = 0x6B4A2E
+        val aco = 0xC3CAD3
+        val acoEscuro = 0x8E98A6
+        caixa(mao, 0f, 0.1f, 0f, 0.08f, 0.22f, 0.08f, madeira, Meshes.CYLINDER)      // ponta de cima do cabo
+        caixa(mao, 0f, -0.42f, 0f, 0.08f, 1.05f, 0.08f, madeira, Meshes.CYLINDER)    // cabo
+        caixa(mao, 0f, -0.98f, 0f, 0.17f, 0.22f, 0.17f, acoEscuro, Meshes.CYLINDER)  // olhal
+        caixa(mao, 0.3f, -0.98f, 0f, 0.44f, 0.6f, 0.07f, aco)                        // lâmina direita
+        caixa(mao, -0.3f, -0.98f, 0f, 0.44f, 0.6f, 0.07f, aco)                       // lâmina esquerda
+        caixa(mao, 0f, -1.16f, 0f, 0.09f, 0.2f, 0.09f, acoEscuro, Meshes.CONE, PI.toFloat()) // ponta
+    }
+
+    /** Adaga presa na mão: lâmina curta continuando o braço (para baixo no sistema da mão). */
+    private fun adaga(mao: FloatArray) {
+        val aco = 0xDCE3EA
+        caixa(mao, 0f, 0.05f, 0f, 0.05f, 0.16f, 0.05f, 0x2B2B33)                          // cabo
+        caixa(mao, 0f, -0.05f, 0f, 0.18f, 0.05f, 0.06f, 0x8E98A6)                         // guarda
+        caixa(mao, 0f, -0.26f, 0f, 0.05f, 0.36f, 0.02f, aco)                              // lâmina
+        caixa(mao, 0f, -0.5f, 0f, 0.05f, 0.1f, 0.02f, aco, Meshes.PYRAMID, PI.toFloat())  // ponta
+    }
+
+    /** Adagas lançadas pelo assassino, voando na direção do arremesso. */
+    private fun adagasVoando(e: ColiseuEngine) {
+        flash = 0f; aviso = 0f; dano = 0f
+        for (a in e.adagas) {
+            val ang = atan2(a.vx, a.vz)
+            val m = Math3D.mul(
+                Math3D.mul(Math3D.translate(a.x, 1.05f, a.z), Math3D.rotY(ang)),
+                Math3D.mul(Math3D.rotX(-(PI / 2).toFloat()), Math3D.scale(0.1f, 0.5f, 0.1f))
+            )
+            peca(Meshes.CONE, m, 0xDCE3EA)
+        }
     }
 
     // ============================================================ goblins

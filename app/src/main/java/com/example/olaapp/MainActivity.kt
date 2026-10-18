@@ -68,7 +68,7 @@ class MainActivity : Activity() {
         val botaoColiseu = Button(this).apply {
             text = "Jogar: Coliseu do Eric (3D)"
             setOnClickListener {
-                startActivity(Intent(this@MainActivity, ColiseuActivity::class.java))
+                startActivity(Intent(this@MainActivity, MenuActivity::class.java))
             }
         }
 

@@ -54,9 +54,16 @@ class Particula(
     val r: Float, val g: Float, val b: Float, val tamanho: Float
 )
 
+/** Adaga lançada pelo assassino: anda em linha reta e some ao atingir um goblin. */
+class Adaga(var x: Float, var z: Float, var vx: Float, var vz: Float, var vida: Float)
+
 private class Chegada(var t: Float, val chefe: Boolean, val portao: Int)
 
-class ColiseuEngine(seed: Long = System.nanoTime()) {
+class ColiseuEngine(
+    seed: Long = System.nanoTime(),
+    val personagem: Personagem = Personagem.CAVALEIRO,
+    val nivel: Int = 1
+) {
 
     companion object {
         const val ARENA_R = 18f
@@ -66,11 +73,12 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
         const val JOGADOR_HP = 100f
         const val JOGADOR_RAIO = 0.45f
 
-        const val ATAQUE_DUR = 0.45f
-        const val GOLPE_INICIO = 0.15f
-        const val GOLPE_FIM = 0.27f
-        const val ESPADA_ALCANCE = 2.3f
-        const val ESPADA_DANO = 20f
+        // os tempos, o alcance e o dano do ataque dependem do lutador escolhido (veja [Personagem])
+
+        // adaga do assassino (ataque à distância)
+        const val ADAGA_VEL = 26f
+        const val ADAGA_VIDA = 0.85f
+        const val ADAGA_RAIO = 0.28f
 
         const val ROLAR_DUR = 0.42f
         const val ROLAR_INVULNERAVEL = 0.34f
@@ -102,6 +110,7 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
 
     val goblins = ArrayList<Goblin>()
     val particulas = ArrayList<Particula>()
+    val adagas = ArrayList<Adaga>()
     private val chegadas = ArrayList<Chegada>()
 
     // ---- jogador
@@ -125,6 +134,7 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
     private var rolarRecarga = 0f
     private var bufAtaque = 0f
     private var bufRolar = 0f
+    private var adagaLancada = false
 
     // ---- entrada (no plano do mundo, tamanho máximo 1)
     private var movX = 0f
@@ -134,6 +144,13 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
     val frenteZ get() = cos(face)
     val goblinsRestantes get() = goblins.count { it.vivo } + chegadas.size
     val rolando get() = rolarT in 0f..ROLAR_DUR
+
+    // ---- números do ataque do lutador escolhido (veja [Personagem])
+    val ataqueDur get() = personagem.duracaoAtaque
+    val golpeInicio get() = personagem.golpeInicio
+    val golpeFim get() = personagem.golpeFim
+    val alcance get() = personagem.alcance
+    val danoGolpe get() = personagem.danoNoNivel(nivel)
 
     // ============================================================ entrada
 
@@ -179,6 +196,7 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
     private fun passo(dt: Float) {
         time += dt
         atualizarParticulas(dt)
+        atualizarAdagas(dt)
         if (flashDano > 0f) flashDano -= dt
         if (invulneravel > 0f) invulneravel -= dt
         if (rolarRecarga > 0f) rolarRecarga -= dt
@@ -282,6 +300,7 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
         // ataque
         if (bufAtaque > 0f && ataqueT < 0f && rolarT < 0f) {
             ataqueT = 0f
+            adagaLancada = false
             golpeId++
             bufAtaque = 0f
             mirarNoMaisPerto()
@@ -310,8 +329,8 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
 
         if (ataqueT >= 0f) {
             ataqueT += dt
-            golpearComEspada()
-            if (ataqueT >= ATAQUE_DUR) ataqueT = -1f
+            if (personagem.arremessa) lancarAdaga() else golpearComEspada()
+            if (ataqueT >= ataqueDur) ataqueT = -1f
         }
 
         px += (vx + kx) * dt
@@ -347,13 +366,13 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
     }
 
     private fun golpearComEspada() {
-        if (ataqueT < GOLPE_INICIO || ataqueT > GOLPE_FIM) return
+        if (ataqueT < golpeInicio || ataqueT > golpeFim) return
         for (g in goblins) {
             if (!g.vivo || g.ultimoGolpe == golpeId) continue
             val dx = g.x - px
             val dz = g.z - pz
             val d = max(hypot(dx, dz), 0.001f)
-            if (d > ESPADA_ALCANCE + g.raio) continue
+            if (d > alcance + g.raio) continue
             val alinhado = (frenteX * dx + frenteZ * dz) / d
             if (d > g.raio + 0.6f && alinhado < 0.26f) continue
             g.ultimoGolpe = golpeId
@@ -361,8 +380,41 @@ class ColiseuEngine(seed: Long = System.nanoTime()) {
         }
     }
 
+    /** O assassino lança uma adaga no instante do golpe, na direção em que está olhando. */
+    private fun lancarAdaga() {
+        if (adagaLancada || ataqueT < golpeInicio) return
+        adagaLancada = true
+        adagas.add(
+            Adaga(
+                px + frenteX * 0.55f, pz + frenteZ * 0.55f,
+                frenteX * ADAGA_VEL, frenteZ * ADAGA_VEL, ADAGA_VIDA
+            )
+        )
+    }
+
+    private fun atualizarAdagas(dt: Float) {
+        val it = adagas.iterator()
+        while (it.hasNext()) {
+            val a = it.next()
+            a.vida -= dt
+            a.x += a.vx * dt
+            a.z += a.vz * dt
+            var bateu = false
+            for (g in goblins) {
+                if (!g.vivo) continue
+                if (hypot(g.x - a.x, g.z - a.z) <= g.raio + ADAGA_RAIO) {
+                    val l = max(hypot(a.vx, a.vz), 0.001f)
+                    levarGolpe(g, a.vx / l, a.vz / l)
+                    bateu = true
+                    break
+                }
+            }
+            if (bateu || a.vida <= 0f || hypot(a.x, a.z) > ARENA_R) it.remove()
+        }
+    }
+
     private fun levarGolpe(g: Goblin, dirX: Float, dirZ: Float) {
-        g.hp -= ESPADA_DANO
+        g.hp -= danoGolpe
         g.brilho = 0.16f
         g.kx = dirX * (if (g.chefe) 3.5f else 7f)
         g.kz = dirZ * (if (g.chefe) 3.5f else 7f)
